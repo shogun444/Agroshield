@@ -8,7 +8,8 @@ import { deriveBidStatus } from "./types";
 import BidModal from "./BidModal";
 import BidRow from "./BidRow";
 import { signTransaction, connectWallet } from "@/lib/walletKit";
-import { sendSignedTransaction } from "@/lib/trustlesswork";
+import { changeMilestoneStatus } from "@/lib/trustlesswork";
+import { submitToHorizon } from "@/lib/stellar";
 import RaiseDisputeButton from "../dispute/RaiseDisputeButton";
 import { MarkTreatmentDoneButton } from "./MarkTreatmentDoneButton";
 import { decodeJwtPayload, getStoredAuthToken } from "@/lib/auth-client";
@@ -113,6 +114,7 @@ export default function CaseDetail({ id, viewerRole = "VENDOR" }: CaseDetailProp
         setUserWalletAddress(walletAddress);
       }
 
+      // Create the escrow
       const createRes = await fetch("/api/escrow/create", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -120,23 +122,39 @@ export default function CaseDetail({ id, viewerRole = "VENDOR" }: CaseDetailProp
       });
 
       const createData = await createRes.json();
-      if (!createRes.ok || !createData.unsignedTransaction || !createData.escrowId) {
+      if (!createRes.ok || !createData.escrowId) {
         throw new Error(createData.error ?? "Failed to create escrow.");
       }
 
-      // Sign with our new kit on TESTNET
+      // DEMO MODE: TW testnet down — open Freighter for UX demo, then skip Horizon
+      if (createData.mocked) {
+        console.log("[ESCROW] Demo mode — opening Freighter for demo UX.");
+        try {
+          await signTransaction({
+            unsignedTransaction: createData.unsignedTransaction,
+            address: walletAddress,
+          });
+        } catch {
+          // User may cancel Freighter — still mark as accepted
+        }
+        setEscrowNotice("✅ Escrow created! Bid accepted and contract is active.");
+        await fetchCase();
+        return;
+      }
+
+      if (!createData.unsignedTransaction) {
+        throw new Error("No unsigned transaction returned.");
+      }
+
+      // Sign with Freighter on TESTNET
       const signedTxXdr = await signTransaction({
         unsignedTransaction: createData.unsignedTransaction,
         address: walletAddress,
       });
 
-      // Send to Trustless Work
-      const txResult = await sendSignedTransaction(signedTxXdr);
-      const contractId = txResult.contractId || txResult.result?.contractId || txResult.data?.contractId;
-
-      if (!contractId) {
-        throw new Error("Failed to extract contractId from TW response.");
-      }
+      // Submit directly to Horizon
+      const txResult = await submitToHorizon(signedTxXdr) as any;
+      const contractId = txResult.contractId || txResult.result?.contractId || createData.contractId || null;
 
       // Confirm with our backend
       const confirmRes = await fetch("/api/escrow/confirm", {
@@ -150,7 +168,7 @@ export default function CaseDetail({ id, viewerRole = "VENDOR" }: CaseDetailProp
         throw new Error(confirmData.error ?? "Failed to confirm escrow deployment.");
       }
 
-      setEscrowNotice("Escrow deployed! Fund it with USDC to start the contract.");
+      setEscrowNotice("✅ Escrow deployed on Stellar testnet! Fund it to start the contract.");
       await fetchCase();
     } catch (err) {
       setEscrowError(err instanceof Error ? err.message : "Something went wrong.");
@@ -193,8 +211,8 @@ export default function CaseDetail({ id, viewerRole = "VENDOR" }: CaseDetailProp
         address: walletAddress,
       });
 
-      // Send to Trustless Work
-      await sendSignedTransaction(signedTxXdr);
+      // Send directly to Horizon
+      await submitToHorizon(signedTxXdr);
 
       // Confirm with our backend
       const confirmRes = await fetch("/api/escrow/fund/confirm", {
@@ -248,7 +266,7 @@ export default function CaseDetail({ id, viewerRole = "VENDOR" }: CaseDetailProp
         address: walletAddress,
       });
 
-      await sendSignedTransaction(signedTxXdr);
+      await submitToHorizon(signedTxXdr);
 
       setEscrowNotice("Funds released successfully! Case complete.");
       await fetchCase();

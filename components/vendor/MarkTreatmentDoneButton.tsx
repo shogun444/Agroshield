@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { signTransaction, connectWallet } from "@/lib/walletKit";
 import { sendSignedTransaction, changeMilestoneStatus } from "@/lib/trustlesswork";
+import { submitToHorizon } from "@/lib/stellar";
 
 interface MarkTreatmentDoneButtonProps {
   caseId: string;
@@ -93,8 +94,8 @@ export function MarkTreatmentDoneButton({
         address: walletAddress,
       });
 
-      // 4. Send to Trustless Work
-      await sendSignedTransaction(signedXdr);
+      // 4. Send directly to Horizon
+      await submitToHorizon(signedXdr);
 
       // 5. Update our backend
       const markRes = await fetch("/api/mark-treatment-done", {

@@ -1,10 +1,11 @@
 const TW_BASE_URL = "https://dev.api.trustlesswork.com"; // TESTNET ONLY
 
+// TW testnet USDC Soroban token contract (confirmed testnet address)
+const TW_TESTNET_TOKEN = "CAUGJT4GREIY3WHOUUU5RIUDGSPVREF5CDCYJOWMHOVT2GWQT5JEETGJ";
+
 function getApiKey() {
   const apiKey = process.env.TRUSTLESS_WORK_API_KEY;
-  if (!apiKey) {
-    throw new Error("TRUSTLESS_WORK_API_KEY is missing");
-  }
+  if (!apiKey) throw new Error("TRUSTLESS_WORK_API_KEY is missing");
   return apiKey;
 }
 
@@ -16,7 +17,11 @@ function getHeaders() {
 }
 
 async function twJson(path: string, init: RequestInit): Promise<any> {
-  const response = await fetch(`${TW_BASE_URL}${path}`, {
+  const url = `${TW_BASE_URL}${path}`;
+  console.log(`[TW_REQ] ${url}`);
+  if (init.body) console.log(`[TW_BODY] ${init.body}`);
+
+  const response = await fetch(url, {
     ...init,
     headers: {
       ...getHeaders(),
@@ -24,16 +29,17 @@ async function twJson(path: string, init: RequestInit): Promise<any> {
     },
   });
 
-  const data = await response.json().catch(() => ({}));
+  const raw = await response.text();
   if (!response.ok) {
-    const message =
-      (data as { error?: string; message?: string }).error ??
-      (data as { error?: string; message?: string }).message ??
-      `Trustless Work request failed (${response.status})`;
-    throw new Error(message);
+    console.error(`[TW_ERR] ${response.status}:`, raw);
+    throw new Error(raw);
   }
 
-  return data;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
 }
 
 /**
@@ -43,11 +49,16 @@ async function twJson(path: string, init: RequestInit): Promise<any> {
 export async function sendSignedTransaction(signedXdr: string) {
   const isClient = typeof window !== "undefined";
 
-  const endpoint = isClient ? "/api/trustlesswork/send-transaction" : `${TW_BASE_URL}/helper/send-transaction`;
+  const endpoint = isClient
+    ? "/api/trustlesswork/send-transaction"
+    : `${TW_BASE_URL}/helper/send-transaction`;
 
-  const headers = isClient ? { "Content-Type": "application/json" } : getHeaders();
+  const headers = isClient
+    ? { "Content-Type": "application/json" }
+    : getHeaders();
 
   console.log(`[TW_SEND] Target: ${endpoint}`);
+  console.log(`[TW_SEND] XDR: ${signedXdr.slice(0, 20)}...`);
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -55,33 +66,46 @@ export async function sendSignedTransaction(signedXdr: string) {
     body: JSON.stringify({ signedXdr }),
   });
 
+  const raw = await response.text();
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: "Unknown error" }));
-    console.error(`[TW_SEND_ERROR] ${JSON.stringify(error)}`);
-    throw new Error(`TW send-transaction failed: ${JSON.stringify(error)}`);
+    console.error("========== RAW TW ERROR ==========");
+    console.error(raw);
+    console.error("==================================");
+    throw new Error(raw);
   }
 
-  return response.json();
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
 }
 
 /**
- * Deploy escrow — returns unsignedTransaction XDR
+ * Deploy escrow — v2 API schema
+ * roles are nested, amount/platformFee are numbers, trustline is an object
  */
 export async function deployEscrow(payload: {
   engagementId: string;
   title: string;
   description: string;
-  approver: string;
-  serviceProvider: string;
-  releaseSigner: string;
-  receiver: string;
-  platformAddress: string;
-  disputeResolver: string;
-  amount: string | number;
-  platformFee: string | number;
-  milestones: Array<{ description: string; amount?: string | number }>;
+  signer: string;      // wallet address of the transaction signer
+  roles: {
+    approver: string;
+    serviceProvider: string;
+    releaseSigner: string;
+    receiver: string;
+    platformAddress: string;
+    disputeResolver: string;
+  };
+  amount: number;
+  platformFee: number;
+  trustline: {
+    address: string;   // Soroban token contract address
+    symbol: string;    // e.g. "USDC"
+  };
+  milestones: Array<{ description: string; amount?: number }>;
 }) {
-  console.log(`[TW_DEPLOY] ${TW_BASE_URL}/deployer/single-release`);
   return twJson("/deployer/single-release", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -89,14 +113,13 @@ export async function deployEscrow(payload: {
 }
 
 /**
- * Fund escrow — returns unsignedTransaction XDR
+ * Fund escrow — v2 API schema
  */
 export async function fundEscrow(payload: {
   contractId: string;
-  amount: string | number;
+  amount: number;
   signer: string;
 }) {
-  console.log(`[TW_FUND] ${TW_BASE_URL}/escrow/single-release/fund-escrow`);
   return twJson("/escrow/single-release/fund-escrow", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -104,14 +127,44 @@ export async function fundEscrow(payload: {
 }
 
 /**
- * Release funds — returns unsignedTransaction XDR
+ * Release funds — v2 API schema
  */
 export async function releaseFunds(payload: {
   contractId: string;
-  releaseSigner: string;
+  signer: string;  // was releaseSigner in v1
 }) {
-  console.log(`[TW_RELEASE] ${TW_BASE_URL}/escrow/single-release/release-funds`);
   return twJson("/escrow/single-release/release-funds", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Change milestone status — v2 API schema
+ */
+export async function changeMilestoneStatus(payload: {
+  contractId: string;
+  milestoneIndex: string | number;
+  newStatus: string;
+  serviceProvider: string;
+}) {
+  const isClient = typeof window !== "undefined";
+
+  if (isClient) {
+    const response = await fetch("/api/trustlesswork/change-milestone", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to update milestone status");
+    }
+    return data;
+  }
+
+  return twJson("/escrow/single-release/change-milestone-status", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -121,66 +174,39 @@ export async function releaseFunds(payload: {
  * Get escrow status — no signing needed
  */
 export async function getEscrowStatus(contractId: string) {
-  const response = await fetch(`${TW_BASE_URL}/escrow/single-release/get-escrow?contractId=${contractId}`, {
-    headers: getHeaders(),
+  return twJson(`/escrow/single-release/get-escrow?contractId=${contractId}`, {
+    method: "GET",
   });
-  return response.json();
 }
 
-export async function approveMilestone(payload: {
-  contractId: string;
-  milestoneIndex: string;
-  approver: string;
-  newEvidence?: string;
+/**
+ * Set trustline — MUST be called before escrow creation.
+ * Proxies through our server when called client-side (API key protection).
+ */
+export async function setTrustline(payload: {
+  address: string;
 }) {
-  console.log(`[TW_APPROVE] ${TW_BASE_URL}/escrow/single-release/approve-milestone`);
-  return twJson("/escrow/single-release/approve-milestone", {
+  const isClient = typeof window !== "undefined";
+
+  if (isClient) {
+    const response = await fetch("/api/trustlesswork/set-trustline", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Failed to set trustline");
+    return data;
+  }
+
+  return twJson("/helper/set-trustline", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-export async function changeMilestoneStatus(payload: {
-  contractId: string;
-  milestoneIndex: string;
-  newStatus: string;
-  serviceProvider: string;
-  newEvidence?: string;
-}) {
-  console.log(`[TW_CHANGE] ${TW_BASE_URL}/escrow/single-release/change-milestone-status`);
-  return twJson("/escrow/single-release/change-milestone-status", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function disputeEscrow(payload: {
-  contractId: string;
-  signer: string;
-}) {
-  console.log(`[TW_DISPUTE] ${TW_BASE_URL}/escrow/single-release/dispute-escrow`);
-  return twJson("/escrow/single-release/dispute-escrow", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function resolveDispute(payload: {
-  contractId: string;
-  disputeResolver: string;
-  distributions: Array<{ address: string; amount: number | string }>;
-}) {
-  console.log(`[TW_RESOLVE] ${TW_BASE_URL}/escrow/single-release/resolve-dispute`);
-  return twJson("/escrow/single-release/resolve-dispute", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function sendTransaction(signedXdr: string) {
-  console.log(`[TW_BROADCAST] ${TW_BASE_URL}/helper/send-transaction`);
-  return twJson("/helper/send-transaction", {
-    method: "POST",
-    body: JSON.stringify({ signedXdr }),
-  });
-}
+/**
+ * The TW testnet USDC Soroban token contract address
+ */
+export const TW_TOKEN_ADDRESS = TW_TESTNET_TOKEN;
+export const TW_TOKEN_SYMBOL = "USDC";

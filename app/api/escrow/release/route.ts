@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     const response = await releaseFunds({
       contractId: escrow.contractId,
-      releaseSigner: farmer.walletAddress,
+      signer: farmer.walletAddress,
     });
 
     if (!response.unsignedTransaction) {
