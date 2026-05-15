@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deployEscrow } from "@/lib/trustlesswork";
+import { resolveTrustlessWorkNetworkConfig } from "@/lib/stellar-network";
 
 function parseDiagnosis(value: string | null) {
   if (!value) return null;
@@ -63,6 +64,16 @@ export async function POST(request: NextRequest) {
 
     const diagnosis = parseDiagnosis(foundCase.diagnosis);
     const diseaseName = diagnosis?.disease ?? "Crop Treatment";
+    const trustlessWorkNetwork = resolveTrustlessWorkNetworkConfig();
+
+    if (!trustlessWorkNetwork.trustlineAddress) {
+      return NextResponse.json(
+        {
+          error: `Missing Trustless Work trustline address for ${trustlessWorkNetwork.networkMode}. Set TRUSTLESS_WORK_TRUSTLINE_ADDRESS_${trustlessWorkNetwork.networkMode.toUpperCase()} or TRUSTLESS_WORK_TRUSTLINE_ADDRESS.`,
+        },
+        { status: 500 }
+      );
+    }
 
     const existingEscrow = await prisma.escrow.findUnique({
       where: { caseId },
@@ -109,9 +120,7 @@ export async function POST(request: NextRequest) {
         receiver: vendor.walletAddress,
       },
       trustline: {
-        address:
-          process.env.TRUSTLESS_WORK_TRUSTLINE_ADDRESS ??
-          "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+        address: trustlessWorkNetwork.trustlineAddress,
         symbol: process.env.TRUSTLESS_WORK_TRUSTLINE_SYMBOL ?? "USDC",
       },
       milestones: [

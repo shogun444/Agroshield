@@ -1,4 +1,5 @@
-const TW_BASE_URL = process.env.TRUSTLESS_WORK_BASE_URL ?? "https://dev.api.trustlesswork.com";
+import { resolveTrustlessWorkNetworkConfig } from "./stellar-network";
+
 const TW_API_KEY =
   process.env.TRUSTLESS_WORK_API_KEY ?? process.env.tw_api_key ?? "";
 
@@ -11,6 +12,18 @@ function getTwHeaders() {
     "x-api-key": TW_API_KEY,
     "Content-Type": "application/json",
   };
+}
+
+function getBaseUrl() {
+  const { baseUrl, networkMode } = resolveTrustlessWorkNetworkConfig();
+
+  if (!baseUrl) {
+    throw new Error(
+      `Missing Trustless Work base URL for ${networkMode}. Set TRUSTLESS_WORK_BASE_URL_${networkMode.toUpperCase()} or TRUSTLESS_WORK_BASE_URL.`
+    );
+  }
+
+  return baseUrl;
 }
 
 async function safePost(url: string, payload: unknown) {
@@ -70,7 +83,7 @@ export async function deployEscrow(payload: {
     description: string;
   }>;
 }) {
-  return safePost(`${TW_BASE_URL}/deployer/single-release`, payload);
+  return safePost(`${getBaseUrl()}/deployer/single-release`, payload);
 }
 
 export async function fundEscrow(payload: {
@@ -78,11 +91,11 @@ export async function fundEscrow(payload: {
   amount: number;
   signer: string;
 }) {
-  return safePost(`${TW_BASE_URL}/escrow/single-release/fund-escrow`, payload);
+  return safePost(`${getBaseUrl()}/escrow/single-release/fund-escrow`, payload);
 }
 
 export async function sendTransaction(signedXdr: string) {
-  return safePost(`${TW_BASE_URL}/helper/send-transaction`, { signedXdr });
+  return safePost(`${getBaseUrl()}/helper/send-transaction`, { signedXdr });
 }
 
 export async function changeMilestoneStatus(payload: {
@@ -92,7 +105,7 @@ export async function changeMilestoneStatus(payload: {
   serviceProvider: string;
 }) {
   return safePost(
-    `${TW_BASE_URL}/escrow/single-release/change-milestone-status`,
+    `${getBaseUrl()}/escrow/single-release/change-milestone-status`,
     payload
   );
 }
@@ -103,7 +116,7 @@ export async function approveMilestone(payload: {
   approver: string;
 }) {
   return safePost(
-    `${TW_BASE_URL}/escrow/single-release/approve-milestone`,
+    `${getBaseUrl()}/escrow/single-release/approve-milestone`,
     payload
   );
 }
@@ -112,14 +125,14 @@ export async function releaseFunds(payload: {
   contractId: string;
   releaseSigner: string;
 }) {
-  return safePost(`${TW_BASE_URL}/escrow/single-release/release-funds`, payload);
+  return safePost(`${getBaseUrl()}/escrow/single-release/release-funds`, payload);
 }
 
 export async function disputeEscrow(payload: {
   contractId: string;
   disputeStartedBy: string;
 }) {
-  return safePost(`${TW_BASE_URL}/escrow/single-release/dispute-escrow`, payload);
+  return safePost(`${getBaseUrl()}/escrow/single-release/dispute-escrow`, payload);
 }
 
 export async function resolveDispute(payload: {
@@ -128,11 +141,12 @@ export async function resolveDispute(payload: {
   approverFunds: string;
   releasedAmount: string;
 }) {
-  return safePost(`${TW_BASE_URL}/escrow/single-release/resolve-dispute`, payload);
+  return safePost(`${getBaseUrl()}/escrow/single-release/resolve-dispute`, payload);
 }
 
 export async function getEscrow(contractId: string) {
   return safeGet(
-    `${TW_BASE_URL}/escrow/single-release/get-escrow?contractId=${contractId}`
+    `${getBaseUrl()}/escrow/single-release/get-escrow?contractId=${contractId}`
   );
 }
+

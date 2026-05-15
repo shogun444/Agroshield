@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { getConfiguredStellarNetworkLabel } from "@/lib/stellar-network";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -12,6 +13,9 @@ const fadeUp = {
 };
 
 export default function Hero() {
+  const networkLabel = getConfiguredStellarNetworkLabel();
+  const networkCopy = networkLabel === "any Stellar network" ? "" : ` ${networkLabel}`;
+
   return (
     <section className="pt-32 pb-24">
       <div className="mx-auto max-w-4xl px-6">
@@ -21,7 +25,7 @@ export default function Hero() {
           variants={fadeUp}
           className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-1.5 text-xs text-neutral-500 shadow-sm"
         >
-          Now live on Stellar Testnet →
+          Now live on Stellar{networkCopy} →
         </motion.div>
         <motion.h1
           initial="hidden"

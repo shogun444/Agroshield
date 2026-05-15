@@ -7,6 +7,7 @@ import { deriveBidStatus } from "./types";
 import BidModal from "./BidModal";
 import BidRow from "./BidRow";
 import { signTransaction, isConnected } from "@stellar/freighter-api";
+import { getConfiguredStellarNetworkLabel } from "@/lib/stellar-network";
 
 interface CaseDetailProps {
   id: string;
@@ -15,6 +16,8 @@ interface CaseDetailProps {
 
 export default function CaseDetail({ id, viewerRole = "VENDOR" }: CaseDetailProps) {
   const reduceMotion = useReducedMotion();
+  const networkLabel = getConfiguredStellarNetworkLabel();
+  const networkCopy = networkLabel === "any Stellar network" ? "" : ` ${networkLabel}`;
   const [caseData, setCaseData] = useState<CaseDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -411,7 +414,9 @@ export default function CaseDetail({ id, viewerRole = "VENDOR" }: CaseDetailProp
 
             {viewerRole === "FARMER" && caseData.escrow && caseData.escrow.contractId && caseData.escrow.status !== "FUNDED" ? (
               <div className="mt-5 rounded-2xl border border-sky-100 bg-sky-50 p-4">
-                <p className="text-sm font-semibold text-sky-900">Fund escrow with testnet USDC</p>
+                <p className="text-sm font-semibold text-sky-900">
+                  Fund escrow with{networkCopy} USDC
+                </p>
                 <p className="mt-1 text-xs leading-5 text-sky-700">
                   The deploy step only creates the contract. You still need to fund it with USDC before work can begin.
                 </p>
@@ -421,7 +426,7 @@ export default function CaseDetail({ id, viewerRole = "VENDOR" }: CaseDetailProp
                   rel="noreferrer"
                   className="mt-3 inline-flex text-xs font-semibold text-sky-800 underline underline-offset-4"
                 >
-                  How to get testnet tokens
+                  How to get{networkCopy} tokens
                 </a>
                 <button
                   type="button"

@@ -41,6 +41,11 @@ JWT_SECRET="your-secret"
 OLLAMA_BASE_URL="http://localhost:11434"
 OLLAMA_MODEL="gemma4:31b-cloud"
 NEXT_PUBLIC_STELLAR_NETWORK="auto"
+TRUSTLESS_WORK_BASE_URL_TESTNET="https://dev.api.trustlesswork.com"
+TRUSTLESS_WORK_BASE_URL_MAINNET="https://your-mainnet-trustless-work-api"
+TRUSTLESS_WORK_TRUSTLINE_ADDRESS_TESTNET="GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+TRUSTLESS_WORK_TRUSTLINE_ADDRESS_MAINNET="your-mainnet-trustline-address"
+TRUSTLESS_WORK_TRUSTLINE_SYMBOL="USDC"
 ```
 
 Notes:
@@ -48,6 +53,7 @@ Notes:
 - JWT_SECRET is required for auth tokens.
 - OLLAMA_* are used by the diagnose endpoint (defaults are shown above).
 - NEXT_PUBLIC_STELLAR_NETWORK controls which Freighter network the wallet connect flow accepts. Use `auto` to accept the active Freighter network, or set `mainnet`, `testnet`, `futurenet`, or `standalone`.
+- Set the Trustless Work base URL and trustline address for each network you want to support. The current defaults keep testnet working; mainnet requires production values.
 
 ## Project Structure
 
