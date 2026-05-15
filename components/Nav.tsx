@@ -98,12 +98,29 @@ function Nav() {
     };
   }, [isProfileMenuOpen]);
 
-  const handleSignOut = () => {
-    localStorage.removeItem("agroshield_token");
-    setIsProfileMenuOpen(false);
-    notifyAuthChange();
-    router.replace("/login");
-    router.refresh();
+  const handleSignOut = async () => {
+    const token = localStorage.getItem("agroshield_token");
+
+    try {
+      if (token) {
+        await fetch("/api/profile/wallet", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ walletAddress: null }),
+        });
+      }
+    } catch {
+      // Best effort only. Logout must still complete.
+    } finally {
+      localStorage.removeItem("agroshield_token");
+      setIsProfileMenuOpen(false);
+      notifyAuthChange();
+      router.replace("/login");
+      router.refresh();
+    }
   };
 
   return (

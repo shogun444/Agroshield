@@ -263,12 +263,29 @@ export default function ProfileDashboard() {
     };
   }, [retryKey]);
 
-  const handleLogout = () => {
-    setIsProfileMenuOpen(false);
-    localStorage.removeItem("agroshield_token");
-    notifyAuthChange();
-    router.replace("/login");
-    router.refresh();
+  const handleLogout = async () => {
+    const token = localStorage.getItem("agroshield_token");
+
+    try {
+      if (token) {
+        await fetch("/api/profile/wallet", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ walletAddress: null }),
+        });
+      }
+    } catch {
+      // Best effort only. Logout must still complete.
+    } finally {
+      setIsProfileMenuOpen(false);
+      localStorage.removeItem("agroshield_token");
+      notifyAuthChange();
+      router.replace("/login");
+      router.refresh();
+    }
   };
 
   const handleOpenSettings = () => {
