@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       await tx.escrow.update({
         where: { id: escrowId },
         data: { contractId, status: "AWAITING_FUNDING" },

@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     const broadcastResponse = { success: true };
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       await tx.escrow.update({
         where: { id: escrowId },
         data: { status: "FUNDED" },
