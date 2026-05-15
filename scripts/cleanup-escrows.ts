@@ -10,33 +10,33 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
+  // Delete all non-blockchain escrows (ACTIVE demo ones + AWAITING_SIGNATURE)
   const escrows = await prisma.escrow.findMany({
-    where: { status: "AWAITING_SIGNATURE" },
-    select: { id: true, caseId: true, status: true },
+    where: {
+      OR: [
+        { status: "AWAITING_SIGNATURE" },
+        { contractId: { startsWith: "AGRO-DEMO-" } },
+      ],
+    },
+    select: { id: true, caseId: true, status: true, contractId: true },
   });
 
-  console.log(`Found ${escrows.length} stale escrow(s):`, escrows);
+  console.log(`Found ${escrows.length} escrow(s) to clean:`, escrows);
 
   if (escrows.length === 0) {
     console.log("Nothing to clean up.");
     return;
   }
 
-  const escrowIds = escrows.map((e: { id: string }) => e.id);
+  const ids = escrows.map((e: { id: string }) => e.id);
 
-  const txDel = await prisma.transaction.deleteMany({
-    where: { escrowId: { in: escrowIds } },
-  });
-  console.log(`Deleted ${txDel.count} transaction record(s).`);
+  const txDel = await prisma.transaction.deleteMany({ where: { escrowId: { in: ids } } });
+  console.log(`Deleted ${txDel.count} transaction(s).`);
 
-  const escDel = await prisma.escrow.deleteMany({
-    where: { id: { in: escrowIds } },
-  });
+  const escDel = await prisma.escrow.deleteMany({ where: { id: { in: ids } } });
   console.log(`Deleted ${escDel.count} escrow(s).`);
 
-  console.log("Done. You can now retry Accept Bid fresh.");
+  console.log("Done.");
 }
 
-main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+main().catch(console.error).finally(() => prisma.$disconnect());

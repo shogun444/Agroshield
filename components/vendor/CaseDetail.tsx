@@ -126,18 +126,22 @@ export default function CaseDetail({ id, viewerRole = "VENDOR" }: CaseDetailProp
         throw new Error(createData.error ?? "Failed to create escrow.");
       }
 
-      // DEMO MODE: TW testnet down — open Freighter for UX demo, then skip Horizon
+      // DEMO MODE: TW testnet down — Freighter signs a real Stellar tx (self-payment)
+      // which lands on-chain for real. Escrow already ACTIVE in DB.
       if (createData.mocked) {
-        console.log("[ESCROW] Demo mode — opening Freighter for demo UX.");
+        console.log("[ESCROW] Demo mode — opening Freighter with real Stellar tx.");
         try {
-          await signTransaction({
+          const signedXdr = await signTransaction({
             unsignedTransaction: createData.unsignedTransaction,
             address: walletAddress,
           });
-        } catch {
-          // User may cancel Freighter — still mark as accepted
+          // Submit the real tx to Horizon — it will show up on Stellar Expert
+          const result = await submitToHorizon(signedXdr) as any;
+          console.log("[ESCROW] Real tx submitted to testnet:", result?.hash ?? "no hash");
+        } catch (e) {
+          console.warn("[ESCROW] Demo tx submit error (non-fatal):", e);
         }
-        setEscrowNotice("✅ Escrow created! Bid accepted and contract is active.");
+        setEscrowNotice("✅ Bid accepted! Escrow is active and contract has started.");
         await fetchCase();
         return;
       }
@@ -304,7 +308,15 @@ export default function CaseDetail({ id, viewerRole = "VENDOR" }: CaseDetailProp
 
   const diagnosis = caseData.diagnosis;
   const disease = diagnosis?.disease ?? "Unknown Condition";
-  const confidence = diagnosis?.confidence ? Math.round(diagnosis.confidence * 100) : null;
+  const confidence = (() => {
+    const raw = diagnosis?.confidence;
+    if (raw == null) return null;
+    const n = Number(raw);
+    if (Number.isNaN(n)) return null;
+    // AI returns 0-100; guard against 0-1 floats too
+    const pct = n <= 1 ? Math.round(n * 100) : Math.round(n);
+    return Math.max(0, Math.min(100, pct));
+  })();
   const urgency = String(diagnosis?.urgency ?? "NORMAL").toUpperCase();
   const isOpen = caseData.status === "OPEN";
 
@@ -339,11 +351,11 @@ export default function CaseDetail({ id, viewerRole = "VENDOR" }: CaseDetailProp
               {disease}
             </h1>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <MetaCell label="Confidence" value={confidence ? `${confidence}%` : "N/A"} icon="🎯" />
-              <MetaCell label="Farmer" value={caseData.farmer.email} icon="👤" />
-              <MetaCell label="Submitted" value={new Date(caseData.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })} icon="📅" />
-              <MetaCell label="Location" value={(diagnosis as any)?.location ?? "Location on file"} icon="📍" />
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              <MetaCell label="AI Confidence" value={confidence != null ? `${confidence}%` : "N/A"} />
+              <MetaCell label="Farmer" value={caseData.farmer.email} />
+              <MetaCell label="Submitted" value={new Date(caseData.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })} />
+              <MetaCell label="Location" value={(diagnosis as any)?.location ?? "Not specified"} />
             </div>
           </section>
 
@@ -454,7 +466,12 @@ export default function CaseDetail({ id, viewerRole = "VENDOR" }: CaseDetailProp
           </div>
 
           <div className="mt-6 px-4">
-            {caseData.escrow?.contractId ? (
+            {caseData.status === "DISPUTED" || caseData.dispute ? (
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-medium text-red-600 cursor-not-allowed select-none">
+                <span className="inline-block h-2 w-2 rounded-full bg-red-400" />
+                Dispute Raised
+              </div>
+            ) : caseData.escrow?.contractId ? (
               <RaiseDisputeButton
                 caseId={id}
                 escrowContractId={caseData.escrow.contractId}
@@ -527,14 +544,11 @@ export default function CaseDetail({ id, viewerRole = "VENDOR" }: CaseDetailProp
   );
 }
 
-function MetaCell({ label, value, icon }: { label: string; value: string; icon: string }) {
+function MetaCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-white/50 px-5 py-4 shadow-sm border border-white/20">
-      <span className="text-lg">{icon}</span>
-      <div className="min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">{label}</p>
-        <p className="truncate text-sm font-bold text-neutral-800">{value}</p>
-      </div>
+    <div className="rounded-2xl border border-neutral-100 bg-[#F5F0EB] px-5 py-4">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">{label}</p>
+      <p className="mt-1.5 truncate text-sm font-semibold text-neutral-800">{value}</p>
     </div>
   );
 }

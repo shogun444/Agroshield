@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion, AnimatePresence } from "motion/react";
-import { signTransaction, connectWallet } from "@/lib/walletKit";
-import { sendSignedTransaction } from "@/lib/trustlesswork";
 
 interface RaiseDisputeButtonProps {
   caseId: string;
@@ -14,20 +12,16 @@ interface RaiseDisputeButtonProps {
 
 export default function RaiseDisputeButton({
   caseId,
-  escrowContractId,
-  farmerWalletAddress,
   onDisputeRaised,
 }: RaiseDisputeButtonProps) {
   const reduceMotion = useReducedMotion();
   const [showModal, setShowModal] = useState(false);
   const [reason, setReason] = useState("");
-  const [status, setStatus] = useState<
-    "idle" | "loading" | "signing" | "sending" | "success" | "error"
-  >("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
   const handleRaiseDispute = async () => {
-    if (!reason) {
+    if (!reason.trim()) {
       setError("Please provide a reason for the dispute.");
       return;
     }
@@ -37,45 +31,16 @@ export default function RaiseDisputeButton({
 
     try {
       const token = localStorage.getItem("agroshield_token");
-      if (!token) throw new Error("Please log in again to continue.");
+      if (!token) throw new Error("Please log in again.");
 
-      // Ensure wallet is connected
-      let walletAddress = farmerWalletAddress;
-      if (!walletAddress) {
-        walletAddress = await connectWallet();
-      }
-
-      // 1. POST /api/disputes/raise
-      const raiseRes = await fetch("/api/disputes/raise", {
+      const res = await fetch("/api/disputes/raise", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ caseId, reason, contractId: escrowContractId }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ caseId, reason }),
       });
 
-      if (!raiseRes.ok) {
-        const data = await raiseRes.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to raise dispute");
-      }
-
-      const { unsignedTransaction } = await raiseRes.json();
-
-      // 2. Sign with our new kit on TESTNET
-      setStatus("signing");
-      const signedXdr = await signTransaction({
-        unsignedTransaction,
-        address: walletAddress,
-      });
-
-      if (!signedXdr) {
-        throw new Error("Failed to get signed XDR from wallet");
-      }
-
-      // 3. Send transaction via Trustless Work
-      setStatus("sending");
-      await sendSignedTransaction(signedXdr);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to raise dispute");
 
       setStatus("success");
       onDisputeRaised?.();
@@ -90,6 +55,7 @@ export default function RaiseDisputeButton({
       setStatus("error");
     }
   };
+
 
   return (
     <>
@@ -201,13 +167,7 @@ export default function RaiseDisputeButton({
                             disabled={status !== "idle" && status !== "error"}
                             className="flex-1 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
                           >
-                            {status === "loading"
-                              ? "Submitting..."
-                              : status === "signing"
-                              ? "Signing..."
-                              : status === "sending"
-                              ? "Sending..."
-                              : "Raise Dispute →"}
+                            {status === "loading" ? "Submitting..." : "Raise Dispute →"}
                           </button>
                         </div>
                       </div>

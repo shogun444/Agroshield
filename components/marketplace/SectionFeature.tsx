@@ -28,20 +28,20 @@ export default function SectionFeature({
       transition={{ duration: 0.5 }}
       className="py-24"
     >
-      <div className="mx-auto grid max-w-5xl items-center gap-10 px-6 md:grid-cols-2">
+      <div className="mx-auto grid max-w-6xl items-center gap-16 px-6 md:grid-cols-2">
         <div className={reverse ? "md:order-2" : ""}>
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#16a34a]/10 px-3 py-1 text-sm text-[#16a34a]">
+          <div className="inline-flex rounded-full border border-neutral-200 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-neutral-500 shadow-sm">
             {label}
           </div>
-          <h2 className="mt-4 font-[family-name:var(--font-manrope)] text-4xl font-extrabold tracking-tight text-neutral-900">
+          <h2 className="mt-6 font-[family-name:var(--font-manrope)] text-4xl font-semibold leading-tight tracking-tight text-neutral-900 md:text-5xl">
             {heading}
           </h2>
-          <p className="mt-4 max-w-sm font-[family-name:var(--font-inter)] text-lg text-neutral-500">
+          <p className="mt-6 max-w-md font-[family-name:var(--font-inter)] text-lg text-neutral-500 leading-relaxed">
             {subtext}
           </p>
         </div>
         <div className={reverse ? "md:order-1" : ""}>
-          <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
+          <div className="rounded-[2.5rem] border border-neutral-100 bg-[#f8f5f2] p-8 shadow-sm lg:p-10">
             {visual}
           </div>
         </div>

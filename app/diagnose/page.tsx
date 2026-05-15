@@ -324,49 +324,93 @@ export default function DiagnosePage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -16 }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm"
+                className="space-y-5 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm"
               >
-                <div className="space-y-4">
-                  <div className="rounded-3xl border border-neutral-100 bg-[#F5F0EB] p-6">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">
-                          Diagnosis result
-                        </p>
-                        <h2 className="mt-2 font-[family-name:var(--font-manrope)] text-2xl font-bold text-neutral-900">
-                          {diagnosis?.disease ?? "Unknown issue"}
-                        </h2>
-                      </div>
-                      <span className="rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
-                        {String(diagnosis?.urgency ?? "MEDIUM").toUpperCase()}
-                      </span>
+                {/* Header */}
+                <div className="rounded-2xl bg-[#F5F0EB] p-6">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">
+                        Detected Disease
+                      </p>
+                      <h2 className="mt-2 font-[family-name:var(--font-manrope)] text-3xl font-extrabold text-neutral-900 leading-tight">
+                        {diagnosis?.disease ?? "Unknown issue"}
+                      </h2>
                     </div>
+                    <span
+                      className={`mt-1 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wide ${
+                        String(diagnosis?.urgency ?? "").toUpperCase().startsWith("H")
+                          ? "bg-red-100 text-red-700 border border-red-200"
+                          : String(diagnosis?.urgency ?? "").toUpperCase().startsWith("L")
+                          ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                          : "bg-amber-100 text-amber-700 border border-amber-200"
+                      }`}
+                    >
+                      {String(diagnosis?.urgency ?? "MEDIUM").toUpperCase()} Risk
+                    </span>
+                  </div>
 
-                    <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-                        <p className="text-xs text-neutral-400">Confidence</p>
-                        <p className="mt-2 text-lg font-semibold text-neutral-900">
-                          {confidencePercent != null ? `${confidencePercent}%` : "-"}
-                        </p>
+                  {/* Confidence bar */}
+                  {confidencePercent != null && (
+                    <div className="mt-5">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs text-neutral-500">AI Confidence</span>
+                        <span className="text-xs font-bold text-neutral-800">{confidencePercent}%</span>
                       </div>
-                      <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-                        <p className="text-xs text-neutral-400">Recommended pesticide</p>
-                        <p className="mt-2 text-lg font-semibold text-neutral-900">
-                          {String(diagnosis?.pesticide ?? "N/A")}
-                        </p>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-200">
+                        <div
+                          className="h-full rounded-full bg-[#16a34a] transition-all duration-700"
+                          style={{ width: `${confidencePercent}%` }}
+                        />
                       </div>
                     </div>
+                  )}
+                </div>
 
-                    <div className="grid gap-3 rounded-2xl border border-neutral-100 bg-white p-4 text-sm text-neutral-600 md:grid-cols-2">
-                      <div>Recovery days: {String(diagnosis?.recovery_days ?? "-")}</div>
-                      <div>Caused by: {String(diagnosis?.caused_by ?? "-")}</div>
-                    </div>
-                    <p className="text-sm text-neutral-500">Symptoms: {String(diagnosis?.symptoms ?? "-")}</p>
-                    <p className="text-sm text-neutral-500">Treatment: {String(diagnosis?.treatment ?? "-")}</p>
+                {/* Quick stats row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-neutral-100 bg-[#F5F0EB] p-4">
+                    <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Caused by</p>
+                    <p className="mt-1.5 text-sm font-semibold text-neutral-800 leading-snug">
+                      {String(diagnosis?.caused_by ?? "—")}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-neutral-100 bg-[#F5F0EB] p-4">
+                    <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Recovery</p>
+                    <p className="mt-1.5 text-sm font-semibold text-neutral-800">
+                      {diagnosis?.recovery_days != null && Number(diagnosis.recovery_days) > 0
+                        ? `~${diagnosis.recovery_days} days`
+                        : "Ongoing management"}
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-3">
+                {/* Pesticide */}
+                <div className="rounded-2xl border border-neutral-100 bg-white p-5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Recommended Pesticide</p>
+                  <p className="mt-2 text-base font-semibold text-neutral-900">
+                    {String(diagnosis?.pesticide ?? "Consult an agronomist")}
+                  </p>
+                </div>
+
+                {/* Symptoms */}
+                {diagnosis?.symptoms && (
+                  <div className="rounded-2xl border border-neutral-100 bg-white p-5">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-2">Symptoms</p>
+                    <p className="text-sm text-neutral-600 leading-relaxed">{String(diagnosis.symptoms)}</p>
+                  </div>
+                )}
+
+                {/* Treatment */}
+                {diagnosis?.treatment && (
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 mb-2">Treatment Plan</p>
+                    <p className="text-sm text-emerald-900 leading-relaxed">{String(diagnosis.treatment)}</p>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-3 pt-1">
                   <button
                     type="button"
                     onClick={userRole === "FARMER" ? () => setStep("post") : undefined}
@@ -374,23 +418,21 @@ export default function DiagnosePage() {
                     className={`rounded-full px-6 py-3 text-sm font-semibold transition ${
                       userRole === "FARMER"
                         ? "bg-neutral-900 text-white hover:bg-neutral-800"
-                        : "bg-neutral-100 text-neutral-400"
+                        : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                     }`}
                   >
                     {userRole === "FARMER" ? "Post to Marketplace →" : "Farmer access required"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      clearStep();
-                      setStep("upload");
-                    }}
+                    onClick={() => { clearStep(); setStep("upload"); }}
                     className="rounded-full px-6 py-3 text-sm font-semibold text-neutral-500 transition hover:text-neutral-900"
                   >
                     Diagnose Another
                   </button>
                 </div>
               </motion.div>
+
             ) : (
               <motion.div
                 key="post"

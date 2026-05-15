@@ -7,6 +7,7 @@ import SectionFeature from "@/components/marketplace/SectionFeature";
 import FarmerCaseVisual from "@/components/marketplace/FarmerCaseVisual";
 import VendorBidVisual from "@/components/marketplace/VendorBidVisual";
 import EscrowVisual from "@/components/marketplace/EscrowVisual";
+import FAQ from "@/components/FAQ";
 
 export default function Home() {
   return (
@@ -33,6 +34,7 @@ export default function Home() {
         subtext="Built on Stellar using Trustless Work. Escrow holds funds in a smart contract — released automatically when farmer confirms treatment."
         visual={<EscrowVisual />}
       />
+      <FAQ />
       <CTA />
       <Footer />
     </div>

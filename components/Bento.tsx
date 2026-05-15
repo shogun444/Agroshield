@@ -24,34 +24,36 @@ const cards = [
     title: "Dispute Resolution",
     description: "If something goes wrong, our platform mediates. No one loses money unfairly.",
     detail: "Case #2041 · Dispute opened → Resolved",
-    span: "md:col-span-3",
+    span: "md:col-span-2",
   },
 ];
 
 export default function Bento() {
   return (
-    <section id="how" className="py-24">
-      <div className="mx-auto max-w-5xl px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs text-neutral-500"
-        >
-          🌿 How it works
-        </motion.div>
-        <motion.h2
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="mt-4 font-[family-name:var(--font-manrope)] text-4xl font-bold text-neutral-900"
-        >
-          From sick leaf to treatment in minutes
-        </motion.h2>
+    <section id="how" className="py-24 bg-[#f8f5f2]">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="text-center flex flex-col items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex rounded-full border border-neutral-200 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-neutral-500 shadow-sm"
+          >
+            🌿 How it works
+          </motion.div>
+          <motion.h2
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="mt-6 font-[family-name:var(--font-manrope)] text-4xl font-semibold text-neutral-900 md:text-5xl"
+          >
+            From sick leaf to treatment in minutes
+          </motion.h2>
+        </div>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
+        <div className="mt-16 grid gap-6 md:grid-cols-3">
           {cards.map((card, index) => (
             <motion.div
               key={card.title}
@@ -59,13 +61,15 @@ export default function Bento() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.12 }}
-              className={`rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm ${card.span ?? ""}`}
+              className={`rounded-[2rem] border border-neutral-100 bg-white p-8 shadow-sm transition hover:shadow-md ${card.span ?? ""}`}
             >
-              <div className="text-sm text-neutral-400">{card.detail}</div>
-              <h3 className="mt-4 font-[family-name:var(--font-manrope)] text-xl font-semibold text-neutral-900">
+              <div className="inline-flex rounded-xl bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-600 mb-6">
+                {card.detail}
+              </div>
+              <h3 className="font-[family-name:var(--font-manrope)] text-2xl font-semibold text-neutral-900">
                 {card.title}
               </h3>
-              <p className="mt-2 text-sm text-neutral-500 md:text-base">{card.description}</p>
+              <p className="mt-3 text-base text-neutral-500 leading-relaxed">{card.description}</p>
             </motion.div>
           ))}
         </div>
