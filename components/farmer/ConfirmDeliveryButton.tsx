@@ -64,6 +64,7 @@ export function ConfirmDeliveryButton({
     setError(null);
 
     try {
+      if (!auth?.token) throw new Error("Not authenticated");
       const { signTransaction } = await import("@stellar/freighter-api");
 
       const response = await fetch("/api/confirm-delivery", {

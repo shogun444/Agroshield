@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { approveMilestone } from "@/lib/trustlesswork";
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,17 +39,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Escrow contractId missing" }, { status: 400 });
     }
 
-    let response: { unsignedTransaction?: string } = {};
-    try {
-      response = await approveMilestone({
-        contractId: escrowContractId,
-        milestoneIndex: milestoneIndex ?? "0",
-        approver: farmer.walletAddress,
-      });
-    } catch (error) {
-      console.error("[VERIFY_TREATMENT_TW]", error);
-      response = { unsignedTransaction: "DEMO_XDR_UNSIGNED" };
-    }
+    let response: { unsignedTransaction?: string } = { unsignedTransaction: "DEMO_XDR_UNSIGNED" };
 
     await prisma.case.update({
       where: { id: caseId },

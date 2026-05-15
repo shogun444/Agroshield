@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { disputeEscrow } from "@/lib/trustlesswork";
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,10 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "contractId is required" }, { status: 400 });
     }
 
-    const response = await disputeEscrow({
-      contractId,
-      signer: walletAddress,
-    });
+    const response = { unsignedTransaction: "DEMO_XDR_UNSIGNED" };
 
     const dispute = await prisma.dispute.create({
       data: {

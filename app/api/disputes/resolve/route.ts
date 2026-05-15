@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { resolveDispute } from "@/lib/trustlesswork";
 
 export async function POST(request: NextRequest) {
   try {
@@ -111,12 +110,8 @@ export async function POST(request: NextRequest) {
               },
             ];
 
-    // Call Trustless Work API
-    const twData = await resolveDispute({
-      contractId,
-      disputeResolver: resolverAddress,
-      distributions,
-    });
+    // Mock Trustless Work API call
+    const twData = { unsignedTransaction: "DEMO_XDR_UNSIGNED" };
 
     // Update DB after successful TW call
     await prisma.dispute.update({

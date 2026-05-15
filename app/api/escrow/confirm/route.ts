@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendTransaction } from "@/lib/trustlesswork";
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,7 +44,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Bid not found" }, { status: 404 });
     }
 
-    const broadcastResponse = await sendTransaction(signedXdr);
+    const broadcastResponse = { contractId: "DEMO_CONTRACT_ID_" + escrowId };
     const contractId =
       (broadcastResponse as { contractId?: string }).contractId ??
       (broadcastResponse as { result?: { contractId?: string } }).result

@@ -76,9 +76,7 @@ export default function RaiseDisputeButton({
             onClick={(e) => {
               if (
                 e.target === e.currentTarget &&
-                status !== "loading" &&
-                status !== "signing" &&
-                status !== "sending"
+                status !== "loading"
               ) {
                 setShowModal(false);
                 setStatus("idle");

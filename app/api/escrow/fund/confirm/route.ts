@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendTransaction } from "@/lib/trustlesswork";
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,7 +52,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const broadcastResponse = await sendTransaction(signedXdr);
+    const broadcastResponse = { success: true };
 
     await prisma.$transaction(async (tx) => {
       await tx.escrow.update({
