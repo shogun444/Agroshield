@@ -55,9 +55,12 @@ DATABASE_URL="postgresql://user:password@localhost:5432/agroshield?schema=public
 # Authentication (Generate a random string for this)
 JWT_SECRET="your-super-secret-jwt-key"
 
-# AI Diagnosis (Ollama running locally or remotely)
+# AI Diagnosis (Ollama - Local)
 OLLAMA_BASE_URL="http://localhost:11434"
 OLLAMA_MODEL="gemma4:31b-cloud"
+
+# AI Diagnosis (Gemini - Cloud Fallback)
+GEMINI_API_KEY="your-gemini-api-key"
 
 # Stellar Network Config
 NEXT_PUBLIC_STELLAR_NETWORK="testnet"
