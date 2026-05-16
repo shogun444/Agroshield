@@ -1,6 +1,6 @@
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? "gemma4:31b-cloud";
+// const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
+// const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? "gemma4:31b-cloud";
 
 const FALLBACK_DIAGNOSIS = {
   disease: "Analysis Error",
@@ -22,28 +22,28 @@ function cleanJsonText(text: string) {
     .trim();
 }
 
-async function diagnoseWithOllama(imageBase64: string, prompt: string) {
-  const baseUrl = OLLAMA_BASE_URL.replace(/\/$/, "");
-  const apiBase = baseUrl.endsWith("/api") ? baseUrl : `${baseUrl}/api`;
+// async function diagnoseWithOllama(imageBase64: string, prompt: string) {
+//   const baseUrl = OLLAMA_BASE_URL.replace(/\/$/, "");
+//   const apiBase = baseUrl.endsWith("/api") ? baseUrl : `${baseUrl}/api`;
 
-  const response = await fetch(`${apiBase}/generate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: OLLAMA_MODEL,
-      prompt,
-      images: [imageBase64],
-      stream: false,
-    }),
-  });
+//   const response = await fetch(`${apiBase}/generate`, {
+//     method: "POST",
+//     headers: { "Content-Type": "application/json" },
+//     body: JSON.stringify({
+//       model: OLLAMA_MODEL,
+//       prompt,
+//       images: [imageBase64],
+//       stream: false,
+//     }),
+//   });
 
-  if (!response.ok) {
-    throw new Error(`Ollama error: ${response.status} ${response.statusText}`);
-  }
+//   if (!response.ok) {
+//     throw new Error(`Ollama error: ${response.status} ${response.statusText}`);
+//   }
 
-  const data = await response.json();
-  return cleanJsonText(data.response ?? "");
-}
+//   const data = await response.json();
+//   return cleanJsonText(data.response ?? "");
+// }
 
 async function diagnoseWithGemini(imageBase64: string, mimeType: string, prompt: string) {
   if (!GEMINI_API_KEY) throw new Error("Gemini API key missing");
@@ -91,7 +91,7 @@ export async function diagnoseCrop(imageBase64: string, mimeType = "image/jpeg")
 
     try {
       // Try Ollama first (Local development/Private host)
-      resultText = await diagnoseWithOllama(imageBase64, prompt);
+      resultText = await diagnoseWithGemini(imageBase64, mimeType, prompt);
     } catch (ollamaError) {
       // Fallback to Google Gemini (Cloud deployment)
       if (GEMINI_API_KEY) {
